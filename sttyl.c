@@ -21,64 +21,53 @@
 
 void show_some_flags(struct termios *ttyp);
 
-
-static void show_all_fields(struct termios *ttyinfo);
 static int validate_input(int argc, char *argv[]);
 static int matches(char *param, char *userinput);
 static void show_baud(speed_t thespeed);
-static void show_rows();
-static static void show_fields(struct termios *ttyinfo);
+
 
 int main(int argc, char *argv[]) {
-    /* collect user input and validate or fail with message */
-    if (validate_input(argc, argv) == EXIT_FAILURE) {
-        exit(EXIT_FAILURE);
-    }
 
-    // get termios info
-    struct termios ttyinfo; /* this struct holds tty info */
-
-    if (tcgetattr(STDOUT_FILENO, &ttyinfo) == -1) { /* get info */
+    /* Get the current terminal attributes. */
+    
+    if (tcgetattr(STDOUT_FILENO, &sys_tty) == -1) { /* get info */
         perror("cannot get params about stdin");
         exit(EXIT_FAILURE);
     }
 
+    if (ioctl( STDOUT_FILENO, TIOCGWINSZ, &sys_win) == -1) {
+        perror("cannot get rows/columns for stdin");
+        exit(EXIT_FAILURE);
+    }
+
+    if (cfgetospeed (&sys_tty) == (unsigned int)-1) {
+        perror("cannot get baud rate for stdin");
+        exit(EXIT_FAILURE);
+    }
+    
     // no args? print everything
-    if(argc <= 2) {
-        show_all_fields(&ttyinfo);
+    if (argc < 2) {
+        print_all_fields();
         exit(EXIT_SUCCESS);
     }
     
-    // set whatever's in user set array
+    /* collect user input and validate or fail with message */
+    if (validate_input(argc, argv) == EXIT_FAILURE) {
+        exit(EXIT_FAILURE);
+    }
     
+   
+//    // set whatever's in user set array
+//    if (tcsetattr(FILENO_STDIN, &sys_tty) == -1) {
+//        perror("unable to set tty attributes");
+//        exit(EXIT_FAILURE);
+//    }
 
     //printv_arr();
 
     return 0;
 }
 
-static void show_all_fields(struct termios *ttyinfo) {
-    // get output speed
-    show_baud ( cfgetospeed (ttyinfo) );
-    show_rows();
-    printf("\n");
-}
-
-static void show_rows() {
-    struct winsize term;
-    ioctl( STDOUT_FILENO, TIOCGWINSZ, &term);
-    printf("rows %ho; columns %ho; ",term.ws_row, term.ws_col); 
-}
-
-/**
- * show the current value of selected fields, match ttyinfo against
- * v_args_arr display the results
- * @param ttyinfo
- */
-static void show_fields(struct termios *ttyinfo) {
-    
-    
-}
 
 /** 
  * @param argc - number of cmd line args
@@ -86,55 +75,55 @@ static void show_fields(struct termios *ttyinfo) {
  * @return EXIT_SUCCESS if input is valid
  */
 static int validate_input(int numargs, char *argv[]) {
-    if (numargs == 1) { // no params to validate, go ahead
-        return EXIT_SUCCESS;
-    }
-
-    /* check each param, if it matches erase, kill, 
-     * it should be followed by a single char
-     * if it matches anything else, collect it
-     * other wise return fail
-     */
-    int i = 1;
-    while (i < numargs) {
-        int foundmatch = 0;
-        for (int j = 0; v_args_arr[j].param_name != NULL; j++) {
-            if ((foundmatch = matches(argv[i], v_args_arr[j].param_name))) { // param name matches
-                // does it require an arg?
-                if (v_args_arr[j].req_fl) {
-                  // debug(" %s requires an arg\n", v_args_arr[j].param_name);
-                    // next item should exist and be a single char
-                    if ((i + 1 >= numargs)) { // no arg
-                        //debug("no more items, argc= %d\n", numargs);
-                        fprintf(stderr, "sttyl: missing argument to `%s'\n ", argv[i]);
-                        return EXIT_FAILURE;
-                    } else if (strlen(argv[i + 1]) > 1) { // too many args
-                        fprintf(stderr, "sttyl: invalid integer argument `%s'\n ", argv[i + 1]); 
-                        return EXIT_FAILURE;
-                    }
-                    /* param matches, arg is right length, collect it, set i to skip, break */
-                    //debug(" %s setting arg to %s\n", v_args_arr[j].param_name, argv[i + 1]);
-                    v_args_arr[j].p_arg = argv[i + 1][0];
-                    v_args_arr[j].set_by_usr = 1;
-                    i++; // increment so we skip the next arg
-                    break;
-
-                } else { // its a matching sw, set the value according to sw
-                    v_args_arr[j].set_by_usr = 1;
-                    v_args_arr[j].set_fl = 1;
-                    if (argv[i][0] == '-') { // turn flag off
-                        v_args_arr[j].set_fl = 0;
-                    }
-                    break;
-                }
-            }
-        }
-        if (!foundmatch) { // this didn't match anything
-            fprintf(stderr, "sttyl: invalid argument `%s'\n ", argv[i]);
-            return EXIT_FAILURE;
-        }
-        i++;
-    }
+//    if (numargs == 1) { // no params to validate, go ahead
+//        return EXIT_SUCCESS;
+//    }
+//
+//    /* check each param, if it matches erase, kill, 
+//     * it should be followed by a single char
+//     * if it matches anything else, collect it
+//     * other wise return fail
+//     */
+//    int i = 1;
+//    while (i < numargs) {
+//        int foundmatch = 0;
+//        for (int j = 0; dispf[j].param_name != NULL; j++) {
+//            if ((foundmatch = matches(argv[i], dispf[j].param_name))) { // param name matches
+//                // does it require an arg?
+//                if (dispf[j].req_fl) {
+//                  // debug(" %s requires an arg\n", v_args_arr[j].param_name);
+//                    // next item should exist and be a single char
+//                    if ((i + 1 >= numargs)) { // no arg
+//                        //debug("no more items, argc= %d\n", numargs);
+//                        fprintf(stderr, "sttyl: missing argument to `%s'\n ", argv[i]);
+//                        return EXIT_FAILURE;
+//                    } else if (strlen(argv[i + 1]) > 1) { // too many args
+//                        fprintf(stderr, "sttyl: invalid integer argument `%s'\n ", argv[i + 1]); 
+//                        return EXIT_FAILURE;
+//                    }
+//                    /* param matches, arg is right length, collect it, set i to skip, break */
+//                    //debug(" %s setting arg to %s\n", v_args_arr[j].param_name, argv[i + 1]);
+//                    dispf[j].p_arg = argv[i + 1][0];
+//                    dispf[j].set_by_usr = 1;
+//                    i++; // increment so we skip the next arg
+//                    break;
+//
+//                } else { // its a matching sw, set the value according to sw
+//                    dispf[j].set_by_usr = 1;
+//                    dispf[j].set_fl = 1;
+//                    if (argv[i][0] == '-') { // turn flag off
+//                        dispf[j].set_fl = 0;
+//                    }
+//                    break;
+//                }
+//            }
+//        }
+//        if (!foundmatch) { // this didn't match anything
+//            fprintf(stderr, "sttyl: invalid argument `%s'\n ", argv[i]);
+//            return EXIT_FAILURE;
+//        }
+//        i++;
+//    }
     return EXIT_SUCCESS;
 }
 

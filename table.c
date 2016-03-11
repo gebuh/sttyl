@@ -4,48 +4,88 @@
  * Purpose: keep all required data structures in one place
  */
 
-#include "table.h"
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
+#include "table.h"
+
+struct termios sys_tty;
+struct winsize sys_win;
+speed_t sys_speed;
 
 /* array of allowable user input with required flag */
-struct user_input v_args_arr[] = {
-    {"erase",   1, 0, 0, 0, 'n'},
-    {"kill",    1, 0, 0, 0, 'n'},
-    {"echo",    0, 0, 0, 0, 'l'},
-    {"echoe",   0, 0, 0, 0, 'l'},
-    {"hupcl",   0, 0, 0, 0, 'c'},
-    {"icrnl",   0, 0, 0, 0, 'i'},
-    {"isig",    0, 0, 0, 0, 'l'},
-    {"opost",   0, 0, 0, 0, 'o'},
-    {"intr",    0, 0, 0, 0, 'n'},
-    {"icanon",  0, 0, 0, 0, 'l'},
-    {NULL,      0, 0, 0, 0,   0}
-}; 
+struct all_fields dispf[] = {
+    {"erase", REQD_CHAR, &sys_tty.c_cc[VERASE], 0, 0},
+    {"kill", REQD_CHAR, &sys_tty.c_cc[VKILL], 0, 0},
+    {"eol", REQD_CHAR, &sys_tty.c_cc[VEOL], 0, 0},
+    {"echo", REQD_BIT, &sys_tty.c_lflag, ECHO, 0},
+    {"echoe", REQD_BIT, &sys_tty.c_lflag, ECHOE, 0},
+    {"hupcl", REQD_BIT, &sys_tty.c_cflag, HUPCL, 0},
+    {"icrnl", REQD_BIT, &sys_tty.c_iflag, ICRNL, 0},
+    {"isig", REQD_BIT, &sys_tty.c_lflag, ISIG, 0},
+    {"opost", REQD_BIT, &sys_tty.c_oflag, OPOST, 0},
+    {"intr", REQD_CHAR, &sys_tty.c_cc[VINTR], 0, 0},
+    {"icanon", REQD_BIT, &sys_tty.c_lflag, ICANON, 0},
+    {"rows", REQD_RC, &sys_win.ws_row, 0, 1},
+    {"columns", REQD_RC, &sys_win.ws_col, 0, 1},
+    {"speed", REQD_SPD, &sys_speed, 0, 1},
+    {NULL, 0, NULL, 0, 0}
+};
 
+void print_all_fields() {
+    for(int i=0; dispf[i].param_name != NULL; i++) {
+        print_field (&dispf[i]);
+    } 
+    printf("\n");
+}
 /**
  * print a single user_input struct
  * @param u_in
  */
-static void printuserinput(struct user_input *u_in) {
-    printf("param: %s ", u_in->param_name);
-    printf("arg: %c ", u_in->p_arg);
-    printf("req'd?: %d ", u_in->req_fl);
-    printf("set?: %d ", u_in->set_fl);
-    printf("set by usr?: %d\n ", u_in->set_by_usr);
-}
+void print_field(struct all_fields *u_in) {
+    char *dash = "-";
+    int ch;
+    
+    switch (u_in->req_fl) {
+        case REQD_BIT:
+            if (*(tcflag_t *) u_in->sys_p & u_in->bitmask) {
+                dash = "";
+            }
+            printf("%s%s;", dash, u_in->param_name);
+            break;
 
-/**
- * print an entire user_input array
- */
-void printv_arr() {
-    printf("v_args_arr:\n");
-    for (int i=0; v_args_arr[i].param_name != NULL; i++){
-        printuserinput(&v_args_arr[i]);
+        case REQD_CHAR:
+            ch = *(cc_t *) u_in->sys_p;
+            printf("%s = ", u_in->param_name);
+            if (ch > 0x7F) {
+                printf("<non-ascii(0x%02X)>", ch);
+            } else if (ch == '\0') {
+                printf("<undef>");
+            } else if (ch == 0x7F) {
+                printf("^?");
+            } else if (ch >= ' ' && ch <= '~') {
+                printf("%c", ch);
+            } else if (ch < ' ') {
+                printf("^%c", 'A' + ch - 1);
+            } else {
+                printf("\%03o", ch);
+            }
+            printf(";");
+            break;
+
+        case REQD_RC:
+            printf("%s %d;", u_in->param_name, (int) *(unsigned short int *) u_in->sys_p);
+            break;
+
+        case REQD_SPD:
+            printf("%s %d", u_in->param_name, (int) *(speed_t *) u_in->sys_p);
+            break;
+
+        default:
+            assert(0);
     }
-}
 
-/**
- * I want to get whatever value I need, so put all of them in a table
- * matched against what I might look for
- */
+    printf(" ");
+    return;
+}

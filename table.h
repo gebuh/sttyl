@@ -7,17 +7,33 @@
 #ifndef TABLE_H
 #define TABLE_H
 
-/* for collecting user input, param name and arg flag */
-struct user_input {
-    char *param_name;  /* name of valid cmdline param */
-    int req_fl;         /* set if param_name should have an argument */
-    char p_arg;       /* argument to params that require them */
-    int set_fl;         /* on/off sw for set params */
-    int set_by_usr;      /* on if set by user */
-    char type_fl;        /* is this control, local or input fl? */ 
+#include <termios.h>
+#include <sys/ioctl.h>
+
+extern struct termios sys_tty;
+extern struct winsize sys_win;
+extern speed_t sys_speed;
+
+
+enum disp_t {
+    REQD_BIT,
+    REQD_CHAR,
+    REQD_RC,
+    REQD_SPD
 };
 
-extern struct user_input v_args_arr[11]; //FIXME - less brittle
+/* for collecting user input, param name and arg flag */
+struct all_fields {
+    char *param_name;  /** name of valid cmdline param */
+    enum disp_t req_fl;     /** type that sys_p points to */
+    void *sys_p;       /** field in struct termios etc that holds this param */
+    tcflag_t bitmask;  /** which bit(s) in *sys_p (if req_fl indicates BIT) */
+    int read_only;     /** parameter cannot be set; display only */ 
+};
+
+extern struct all_fields dispf[];  //FIXME - less brittle
+extern void print_field(struct all_fields *u_in);
+extern void print_all_fields();
 void printv_arr();
 #endif /* TABLE_H */
 

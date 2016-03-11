@@ -16,7 +16,7 @@
 #   OBJS -.o files generated from class files
 #
 
-CFLAGS = -Wall -Wextra -std=gnu99 -DEBUG
+CFLAGS = -Wall -Wextra -std=gnu99
 TGT = sttyl
 SRC = $(wildcard *.c)
 DEPS := $(wildcard *.h)
