@@ -25,15 +25,14 @@ enum disp_t {
 /* for collecting user input, param name and arg flag */
 struct all_fields {
     char *param_name;  /** name of valid cmdline param */
-    enum disp_t req_fl;     /** type that sys_p points to */
+    enum disp_t param_type;     /** type that sys_p points to */
     void *sys_p;       /** field in struct termios etc that holds this param */
     tcflag_t bitmask;  /** which bit(s) in *sys_p (if req_fl indicates BIT) */
     int read_only;     /** parameter cannot be set; display only */ 
 };
 
-extern struct all_fields dispf[];  //FIXME - less brittle
-extern void print_field(struct all_fields *u_in);
+extern const struct all_fields dispf[];  //FIXME - less brittle
+extern void print_field(const struct all_fields *u_in);
 extern void print_all_fields();
 void printv_arr();
 #endif /* TABLE_H */
-

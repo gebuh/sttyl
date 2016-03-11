@@ -14,8 +14,10 @@ struct termios sys_tty;
 struct winsize sys_win;
 speed_t sys_speed;
 
+static void show_baud(speed_t thespeed);
+
 /* array of allowable user input with required flag */
-struct all_fields dispf[] = {
+const struct all_fields dispf[] = {
     {"erase", REQD_CHAR, &sys_tty.c_cc[VERASE], 0, 0},
     {"kill", REQD_CHAR, &sys_tty.c_cc[VKILL], 0, 0},
     {"eol", REQD_CHAR, &sys_tty.c_cc[VEOL], 0, 0},
@@ -43,11 +45,11 @@ void print_all_fields() {
  * print a single user_input struct
  * @param u_in
  */
-void print_field(struct all_fields *u_in) {
+void print_field(const struct all_fields *u_in) {
     char *dash = "-";
     int ch;
     
-    switch (u_in->req_fl) {
+    switch (u_in->param_type) {
         case REQD_BIT:
             if (*(tcflag_t *) u_in->sys_p & u_in->bitmask) {
                 dash = "";
@@ -79,7 +81,7 @@ void print_field(struct all_fields *u_in) {
             break;
 
         case REQD_SPD:
-            printf("%s %d", u_in->param_name, (int) *(speed_t *) u_in->sys_p);
+            show_baud (*(speed_t *) u_in->sys_p);
             break;
 
         default:
@@ -88,4 +90,33 @@ void print_field(struct all_fields *u_in) {
 
     printf(" ");
     return;
+}
+
+/**
+ * FIXME ADD MORE BAUDS
+ */
+static void show_baud(speed_t thespeed) {
+    printf("speed ");
+    switch (thespeed) {
+        case B300: printf("300");
+            break;
+        case B600: printf("600");
+            break;
+        case B1200: printf("1200");
+            break;
+        case B1800: printf("1800");
+            break;
+        case B2400: printf("2400");
+            break;
+        case B4800: printf("4800");
+            break;
+        case B9600: printf("9600");
+            break;
+        case B38400: printf("38400");
+            break;
+        default: printf("Fast");
+            assert(0);
+            break;
+    }
+    printf(" baud ");
 }
