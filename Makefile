@@ -2,12 +2,11 @@
 # Project: sttly
 # Author:  Beth Boose
 #
-# Makefile to build sttly
+# Makefile to build sttyl
 # CFLAGS:
 #   -Wall  turns on a lot of useful warning messages
 #   -Wextra turns on more warning messages missed by -Wall
 #   -std=gnu99 use C99 for compiling
-#   -DDEBUG set to output debug statements
 #
 # VARIABLES:
 #   TGT - name of the executable
