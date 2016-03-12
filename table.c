@@ -10,13 +10,18 @@
 #include <assert.h>
 #include "table.h"
 
+/** our termios struct for display and/or setting */
 struct termios sys_tty;
+
+/** hold row/col data */
 struct winsize sys_win;
+
+/** hold speed data */
 speed_t sys_speed;
 
 static void show_baud(speed_t thespeed);
 
-/* array of allowable user input with required flag */
+/** array of implemented input and/or output termios tty fields */
 const struct stty_fields dispf[] = {
     {"speed",   REQD_SPD,   &sys_speed,             0,      1},
     {"rows",    REQD_RC,    &sys_win.ws_row,        0,      1},
@@ -48,7 +53,7 @@ void print_dispf() {
 /**
  * print a single user_input struct use disp_t to determine type
  * and print accordingly
- * @param one_row
+ * @param one_row a single stty_fields struct
  */
 void print_dispf_row(const struct stty_fields *one_row) {
     char *dash = "-";
@@ -99,7 +104,7 @@ void print_dispf_row(const struct stty_fields *one_row) {
 }
 
 /**
- * convert speeds to baud
+ * convert speeds to baud and print
  */
 static void show_baud(speed_t thespeed) {
     printf("speed ");
