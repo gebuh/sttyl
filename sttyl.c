@@ -4,7 +4,6 @@
  * Purpose: duplicate some of the functionality of stty
  */
 #include "table.h"
-#include "debug.h"
 #include <stdio.h>
 #include <termios.h>
 #include <stdlib.h>
@@ -13,6 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <assert.h>
 
 
 static int populate_dispf(int argc, char *argv[]);
@@ -24,12 +24,13 @@ int main(int argc, char *argv[]) {
         perror("cannot get params about stdin");
         exit(EXIT_FAILURE);
     }
+    
 /* get winsize for rows/columns */
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &sys_win) == -1) {
         perror("cannot get rows/columns for stdin");
         exit(EXIT_FAILURE);
     }
-/* need this for baud rate */ 
+/* get speed for baud rate */ 
     if ((sys_speed = cfgetospeed(&sys_tty)) == (speed_t) - 1) {
         perror("cannot get baud rate for stdin");
         exit(EXIT_FAILURE);
@@ -52,11 +53,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 /** 
- * validate and populate 
+ * validate and populate globals to hold stty data
+ * This is where the heavy lifting happens, if user inputs are valid
+ * populate sys_tty
  * @param argc - number of cmd line args
  * @param argv - ptr to cmd line args
  * @return EXIT_SUCCESS if input is valid
@@ -75,18 +78,22 @@ static int populate_dispf(int argc, char *argv[]) {
                     case REQD_CHAR:
                         if ((i + 1 >= argc)) { // no arg
                             //debug("no more items, argc= %d\n", numargs);
-                            fprintf(stderr, "sttyl: missing argument to `%s'\n ", argv[i]);
+                            fprintf(stderr, "sttyl: missing argument to `%s'\n"
+                                    , argv[i]);
                             return EXIT_FAILURE;
                         } else if (strlen(argv[i + 1]) > 1) { // too many args
-                            fprintf(stderr, "sttyl: invalid integer argument `%s'\n ", argv[i + 1]);
+                            fprintf(stderr, "sttyl: invalid integer "
+                                    "argument `%s'\n ", argv[i + 1]);
                             return EXIT_FAILURE;
                         }
-                        /* param matches, arg is right length, collect it, set i to skip, break */
+                        /* param matches, arg is right length, collect it, 
+                         * set i to skip, break */
                         *(cc_t *) dispf[j].sys_p = argv[i + 1][0];
                         i++; // increment so we skip the next arg
                         break;
 
-                    case REQD_BIT: // its a matching sw, set the value according to sw 
+                    case REQD_BIT: 
+                        // its a matching sw, set the value according to sw
                         if (argv[i][0] == '-') { // turn flag off
                             *(tcflag_t *) dispf[j].sys_p &= ~dispf[j].bitmask;
                         } else {
@@ -95,7 +102,8 @@ static int populate_dispf(int argc, char *argv[]) {
                         break;
 
                     case REQD_RC:
-                        fprintf(stderr, "setting row/columns not implemented\n");
+                        fprintf(stderr, 
+                                "setting row/columns not implemented\n");
                         return EXIT_FAILURE;
                     case REQD_SPD:
                         fprintf(stderr,"setting speed is not implemented\n");

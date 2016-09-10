@@ -11,9 +11,14 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 
+/** our termios struct for display and/or setting */
 extern struct termios sys_tty;
+
+/** hold row/col data */
 extern struct winsize sys_win;
-extern speed_t sys_speed;
+
+/** hold speed data */
+extern speed_t sys_speed; 
 
 /**
  * use enum to decide how to determine dispf type
@@ -36,8 +41,19 @@ struct stty_fields {
     int read_only;     /** parameter cannot be set; display only */ 
 };
 
+/** array of implemented input and/or output termios tty fields */
 extern const struct stty_fields dispf[];
-extern void print_dispf_row(const struct stty_fields *u_in);
+
+/**
+ * print a single user_input struct use disp_t to determine type
+ * and print accordingly
+ * @param one_row a single stty_fields struct
+ */
+extern void print_dispf_row(const struct stty_fields *one_row);
+
+/**
+ * print the entire dispf
+ */
 extern void print_dispf();
-void printv_arr();
+
 #endif /* TABLE_H */
